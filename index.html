@@ -1,211 +1,222 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>数羊 · Sheep Over Fence</title>
-    <style>
-        :root {
-            --bg-color: #0A0E14;
-            --duration: 3.5s; /* 羊穿过屏幕的总时长 */
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sheep Jump Sleep</title>
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color);
-            overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        }
+<!-- 🌙 Google Analytics（GA4） -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X80FCDPMEW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X80FCDPMEW', {
+    anonymize_ip: true
+  });
+</script>
 
-        #world {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            cursor: pointer;
-            overflow: hidden;
-        }
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0e0e0e;
+  overflow: hidden;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+               "Helvetica Neue", Arial, sans-serif;
+}
 
-        /* 1. 数字：大而粗，呼吸感 */
-        #counter {
-            position: absolute;
-            width: 100%;
-            text-align: center;
-            top: 35%;
-            left: 0;
-            
-            font-size: 200px; /* 极大 */
-            font-weight: 900; /* 极粗 */
-            letter-spacing: -5px;
-            color: rgba(255, 255, 255, 0.35); /* 极低透明度，防止刺激 */
-            
-            transition: transform 4s ease, opacity 4s ease, top 5s ease;
-            user-select: none;
-            z-index: 1;
-            pointer-events: none;
-            
-            /* 基础呼吸动画 */
-            animation: breathing 8s ease-in-out infinite;
-        }
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 
-        @keyframes breathing {
-            0%, 100% { transform: scale(1); opacity: 0.07; }
-            50% { transform: scale(1.03); opacity: 0.12; }
-        }
+/* 🪵 栅栏（图片版，有角度） */
+.fence {
+  position: absolute;
+  top: 60%;
+  left: 5%;
+  width: 90%;
+  height: 80px;
 
-        /* 2. 栅栏：固定在路径中心 */
-        #fence {
-            position: absolute;
-            bottom: 25%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 140px; /* 根据实际图片宽度调整 */
-            height: auto;
-            z-index: 10;
-            opacity: 0.5;
-            transition: opacity 5s ease;
-            pointer-events: none;
-        }
+  background-image: url("fence.png");
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  background-size: auto 100%;
 
-        /* 3. 羊的容器：控制水平位移 */
-        .sheep-container {
-            position: absolute;
-            bottom: 25%;
-            left: -120px;
-            width: 100px;
-            height: 100px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 5;
-            animation: moveRight var(--duration) linear forwards;
-        }
+  pointer-events: none;
+  transition: opacity 4s ease;
+}
 
-        /* 4. 羊的图片：控制跳跃高度与姿态 */
-        .sheep-image {
-            width: 80px; /* 羊的大小 */
-            height: auto;
-            animation: jumpVertical var(--duration) linear forwards;
-        }
+.fence.fade {
+  opacity: 0.05;
+}
 
-        /* 水平动画 */
-        @keyframes moveRight {
-            0% { left: -15%; }
-            100% { left: 115%; }
-        }
+/* 🔢 数字 */
+.fence .number {
+  position: absolute;
+  top: -160px;
+  width: 100%;
+  text-align: center;
 
-        /* 纵向跳跃逻辑 */
-        @keyframes jumpVertical {
-            0%, 15% { transform: translateY(0) rotate(0deg); }
-            40% { transform: translateY(-120px) rotate(-10deg); } /* 跳起 */
-            50% { transform: translateY(-135px) rotate(0deg); }  /* 最高点跨过栅栏 */
-            60% { transform: translateY(-120px) rotate(10deg); }  /* 落下 */
-            75% { transform: translateY(0) rotate(0deg); }       /* 落地 */
-            82% { transform: translateY(3px) scaleY(0.85) rotate(2deg); } /* 困意低头暗示 */
-            92%, 100% { transform: translateY(0) scaleY(1); }
-        }
+  font-size: 240px;
+  color: #e6e6e6;
+  opacity: 0;
+  pointer-events: none;
+}
 
-        /* 响应式调整 */
-        @media (max-width: 768px) {
-            #counter { font-size: 140px; }
-            .sheep-container { width: 80px; }
-            .sheep-image { width: 60px; }
-        }
-    </style>
+.number.soft {
+  animation: numberBreathSoft 3s ease-in-out forwards;
+}
+
+.number:not(.soft) {
+  animation: numberBreath 3s ease-in-out forwards;
+}
+
+.number.sink {
+  transform: translateY(40px);
+}
+
+/* 🐑 羊 */
+.sheep {
+  position: absolute;
+  top: 50%;
+  left: -30%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.sheep img {
+  width: 120px;
+}
+
+.sheep img.nod {
+  transform: rotate(4deg) translateY(2px);
+}
+
+.hint {
+  position: absolute;
+  bottom: 24px;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.25;
+}
+
+/* 🔢 数字呼吸 */
+@keyframes numberBreath {
+  0%   { opacity: 0; transform: scale(0.98); }
+  30%  { opacity: 0; }
+  45%  { opacity: 0.35; transform: scale(1); }
+  70%  { opacity: 0.35; }
+  100% { opacity: 0; transform: scale(0.98); }
+}
+
+@keyframes numberBreathSoft {
+  0%   { opacity: 0; transform: scale(0.995); }
+  30%  { opacity: 0; }
+  45%  { opacity: 0.25; transform: scale(1); }
+  70%  { opacity: 0.25; }
+  100% { opacity: 0; transform: scale(0.995); }
+}
+
+/* 🐑 跳栅栏 */
+@keyframes sheepJumpFence {
+  0%   { transform: translateX(0) translateY(8px) scale(0.98); }
+  40%  { transform: translateX(45vw) translateY(0) scale(1); }
+  50%  { transform: translateX(50vw) translateY(-80px) scale(1); }
+  60%  { transform: translateX(55vw) translateY(0) scale(1); }
+  72%  { transform: translateX(55vw) translateY(0) scale(1); }
+  100% { transform: translateX(130vw) translateY(8px) scale(0.98); }
+}
+</style>
 </head>
+
 <body>
+<div class="container">
 
-    <div id="world">
-        <div id="counter">1</div>
-        <img src="fence.png" id="fence" alt="fence">
-    </div>
+  <!-- 栅栏 + 数字 -->
+  <div class="fence" id="fence">
+    <div class="number" id="number">1</div>
+  </div>
 
-    <script>
-        let realCount = 1;
-        let displayCount = 1;
-        let isPaused = false;
-        const counterEl = document.getElementById('counter');
-        const fenceEl = document.getElementById('fence');
-        const world = document.getElementById('world');
+  <!-- 羊 -->
+  <div class="sheep">
+    <img id="sheepImg" src="sheep.png" alt="sheep" />
+  </div>
 
-        function createSheep() {
-            if (realCount > 300 || isPaused) return;
+  <div class="hint">点击任意位置 暂停 / 继续</div>
+</div>
 
-            const container = document.createElement('div');
-            container.className = 'sheep-container';
-            
-            const img = document.createElement('img');
-            img.src = 'sheep.png';
-            img.className = 'sheep-image';
-            
-            container.appendChild(img);
-            world.appendChild(container);
+<script>
+let realNumber = 1;
+let displayQueue = [];
+let timer = null;
+let running = true;
 
-            // 逻辑处理
-            realCount++;
+const numberEl = document.getElementById("number");
+const fenceEl = document.getElementById("fence");
+const sheepImg = document.getElementById("sheepImg");
 
-            // 5. 即将入睡的错觉机制 (>=80次后 15% 概率视觉重复)
-            if (realCount < 80 || Math.random() > 0.15) {
-                displayCount = realCount;
-            }
+const FINAL_STOP = 300;
 
-            // 更新视觉衰减
-            applyDecayEffects();
+/* 制造“重复错觉” */
+function prepareDisplayQueue(n) {
+  if (n >= 80 && Math.random() < 0.15) {
+    const repeat = Math.random() < 0.5 ? 2 : 3;
+    return Array(repeat).fill(n);
+  }
+  return [n];
+}
 
-            // 羊跑完后移除并生成下一只
-            setTimeout(() => {
-                container.remove();
-                if (realCount <= 300) {
-                    createSheep();
-                } else {
-                    handleFinalStillness();
-                }
-            }, 3500); // 对应 CSS duration
-        }
+function show() {
+  if (realNumber > FINAL_STOP && displayQueue.length === 0) {
+    stop();
+    return;
+  }
 
-        function applyDecayEffects() {
-            counterEl.innerText = displayCount;
+  if (displayQueue.length === 0) {
+    displayQueue = prepareDisplayQueue(realNumber);
+    realNumber++;
+  }
 
-            // 栅栏淡出 (>=200)
-            if (realCount >= 200) {
-                const fenceOpacity = Math.max(0, 0.5 - (realCount - 200) / 150);
-                fenceEl.style.opacity = fenceOpacity;
-            }
+  const displayNumber = displayQueue.shift();
+  numberEl.textContent = displayNumber;
 
-            // 数字衰减逻辑 (>=100 / >=120)
-            if (realCount >= 100) {
-                // 呼吸感减弱
-                counterEl.style.animationDuration = '12s'; 
-            }
-            if (realCount >= 120) {
-                // 位置下沉与变淡
-                const sinkOffset = Math.min(20, (realCount - 120) * 0.15);
-                counterEl.style.top = (35 + sinkOffset) + '%';
-                counterEl.style.opacity = Math.max(0.01, 0.08 - (realCount - 120) / 1200);
-            }
-        }
+  numberEl.className = "number";
+  sheepImg.classList.remove("nod");
+  sheepImg.style.animation = "none";
+  numberEl.style.animation = "none";
+  void numberEl.offsetHeight;
 
-        // 6. 最终静止机制
-        function handleFinalStillness() {
-            // 达到300次，不再产生新的羊，画面自然保持当前状态
-            console.log("世界归于静止...");
-        }
+  if (displayNumber >= 100) numberEl.classList.add("soft");
+  if (displayNumber >= 120) numberEl.classList.add("sink");
+  if (displayNumber >= 200) fenceEl.classList.add("fade");
 
-        // 7. 交互：点击暂停/继续
-        world.onclick = () => {
-            isPaused = !isPaused;
-            const elements = document.querySelectorAll('.sheep-container, .sheep-image');
-            elements.forEach(el => {
-                el.style.animationPlayState = isPaused ? 'paused' : 'running';
-            });
-            
-            if (!isPaused && document.querySelectorAll('.sheep-container').length === 0) {
-                createSheep();
-            }
-        };
+  sheepImg.style.animation = "sheepJumpFence 3s linear forwards";
 
-        // 启动
-        window.onload = createSheep;
-    </script>
+  setTimeout(() => sheepImg.classList.add("nod"), 1800);
+  setTimeout(() => sheepImg.classList.remove("nod"), 2300);
+}
+
+function start() {
+  show();
+  timer = setInterval(show, 3000);
+}
+
+function stop() {
+  clearInterval(timer);
+}
+
+document.body.addEventListener("click", () => {
+  running = !running;
+  running ? start() : stop();
+});
+
+start();
+</script>
 </body>
 </html>
